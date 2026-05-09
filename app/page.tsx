@@ -290,6 +290,7 @@ export default function Page() {
     };
 
     rebuildMoney(nextHistory);
+    setTab("game");
 
     const previousCarryCount = getCarryCountBeforeHole(nextHistory, hole);
     const currentStake = loserTeam.length === 0 ? 0 : fine * (previousCarryCount + 1);
@@ -308,7 +309,7 @@ export default function Page() {
     setResult(
       `패배팀: ${loserTeam.join(" / ")} · 1인 ${formatWon(currentStake)} · ${teamColorNames[teamSettings.A.color]} ${scoreLabel(aScore)} / ${teamColorNames[teamSettings.B.color]} ${scoreLabel(bScore)}`
     );
-    
+
     setEditingHole(null);
   }
 
@@ -334,6 +335,7 @@ export default function Page() {
     setTeams(Object.fromEntries(activePlayers.map((p) => [p, ""])));
     setScores(Object.fromEntries(activePlayers.map((p) => [p, 0])));
     setResult("");
+    setEditingHole(null);
     setTab("game");
   }
 
@@ -341,6 +343,8 @@ export default function Page() {
     const item = holeHistory[h];
 
     if (!item) return;
+
+    setEditingHole(h);
 
     const restoredTeams: Record<string, TeamValue> = {};
 
@@ -711,7 +715,13 @@ export default function Page() {
                 </button>
               ) : (
                 <button
-                  onClick={() => setTab("history")}
+                  onClick={() => {
+                    if (!holeResults[18]) {
+                      alert("18홀 결과 계산을 먼저 눌러주세요.");
+                      return;
+                    }
+                    setTab("history");
+                  }}
                   className="mt-2 h-11 w-full rounded-2xl bg-slate-950 text-sm font-black text-white"
                 >
                   정산 완료 · 결과 보기
