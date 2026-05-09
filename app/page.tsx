@@ -95,8 +95,6 @@ export default function Page() {
   const [holeResults, setHoleResults] = useState<Record<number, string[]>>({});
   const [holeHistory, setHoleHistory] = useState<Record<number, HoleHistoryItem>>({});
   const [result, setResult] = useState("");
-  const [editingHole, setEditingHole] = useState<number | null>(null);
-
   const activePlayers = players.filter(Boolean);
 
   useEffect(() => {
@@ -302,15 +300,12 @@ export default function Page() {
           ? `무승부 · 18홀은 0원 처리`
           : `무승부 · 다음 홀 1인 ${formatWon(nextStake)}판`
       );
-      setEditingHole(null);
       return;
     }
 
     setResult(
       `패배팀: ${loserTeam.join(" / ")} · 1인 ${formatWon(currentStake)} · ${teamColorNames[teamSettings.A.color]} ${scoreLabel(aScore)} / ${teamColorNames[teamSettings.B.color]} ${scoreLabel(bScore)}`
     );
-
-    setEditingHole(null);
   }
 
   function getCarryCountBeforeHole(history: Record<number, HoleHistoryItem>, targetHole: number) {
@@ -330,44 +325,45 @@ export default function Page() {
     return count;
   }
 
-  function nextHole() {
-    setHole((prev) => Math.min(prev + 1, 18));
-    setTeams(Object.fromEntries(activePlayers.map((p) => [p, ""])));
-    setScores(Object.fromEntries(activePlayers.map((p) => [p, 0])));
-    setResult("");
-    setEditingHole(null);
+  function goToHole(targetHole: number) {
+    const target = Math.min(Math.max(targetHole, 1), 18);
+    const item = holeHistory[target];
+
+    setHole(target);
+
+    if (item) {
+      const restoredTeams: Record<string, TeamValue> = {};
+
+      item.teamA.forEach((p) => {
+        restoredTeams[p] = "A";
+      });
+
+      item.teamB.forEach((p) => {
+        restoredTeams[p] = "B";
+      });
+
+      setTeams(restoredTeams);
+      setJoker(item.joker);
+      setPar(item.par);
+      setScores(item.actualDiffs);
+      setResult(`${target}홀 기록 불러옴`);
+    } else {
+      setTeams(Object.fromEntries(activePlayers.map((p) => [p, ""])));
+      setScores(Object.fromEntries(activePlayers.map((p) => [p, 0])));
+      setJoker(activePlayers[0] || "");
+      setPar(4);
+      setResult("");
+    }
+
     setTab("game");
   }
 
-  function loadHole(h: number) {
-    const item = holeHistory[h];
+  function previousHole() {
+    goToHole(hole - 1);
+  }
 
-    if (!item) return;
-
-    setEditingHole(h);
-
-    const restoredTeams: Record<string, TeamValue> = {};
-
-    item.teamA.forEach((p) => {
-      restoredTeams[p] = "A";
-    });
-
-    item.teamB.forEach((p) => {
-      restoredTeams[p] = "B";
-    });
-
-    setHole(h);
-    setTeams(restoredTeams);
-    setJoker(item.joker);
-    setPar(item.par);
-
-    setScores(item.actualDiffs);
-
-    setEditingHole(h);
-
-    setTab("game");
-
-    setResult(`${h}홀 수정중`);
+  function nextHole() {
+    goToHole(hole + 1);
   }
 
   function resetAll() {
@@ -516,7 +512,7 @@ export default function Page() {
 
   const teamA = activePlayers.filter((player) => teams[player] === "A");
   const teamB = activePlayers.filter((player) => teams[player] === "B");
-  const currentHoleSaved = Boolean(holeResults[hole]);
+  const currentHoleSaved = Boolean(holeHistory[hole]);
   const teamAColor = colorClass[teamSettings.A.color];
   const teamBColor = colorClass[teamSettings.B.color];
 
@@ -685,7 +681,7 @@ export default function Page() {
                 onClick={calculate}
                 className="mt-4 h-12 w-full rounded-2xl bg-emerald-600 text-base font-black text-white"
               >
-                {editingHole ? `${editingHole}홀 수정 저장` : currentHoleSaved ? "결과 다시 계산" : "결과 계산"}
+                {currentHoleSaved ? "결과 수정 저장" : "결과 저장"}
               </button>
 
               {result && (
@@ -697,36 +693,37 @@ export default function Page() {
                 </div>
               )}
 
-              {hole > 1 && (
+              <div className="mt-2 grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => loadHole(hole - 1)}
-                  className="mt-2 h-11 w-full rounded-2xl bg-amber-100 text-sm font-black text-amber-900"
+                  onClick={previousHole}
+                  disabled={hole === 1}
+                  className="h-11 rounded-2xl bg-slate-100 text-sm font-black disabled:opacity-40"
                 >
-                  이전 홀 수정
+                  이전 홀
                 </button>
-              )}
 
-              {hole < 18 ? (
-                <button
-                  onClick={nextHole}
-                  className="mt-2 h-11 w-full rounded-2xl bg-slate-100 text-sm font-black"
-                >
-                  다음 홀
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    if (!holeResults[18]) {
-                      alert("18홀 결과 계산을 먼저 눌러주세요.");
-                      return;
-                    }
-                    setTab("history");
-                  }}
-                  className="mt-2 h-11 w-full rounded-2xl bg-slate-950 text-sm font-black text-white"
-                >
-                  정산 완료 · 결과 보기
-                </button>
-              )}
+                {hole < 18 ? (
+                  <button
+                    onClick={nextHole}
+                    className="h-11 rounded-2xl bg-slate-100 text-sm font-black"
+                  >
+                    다음 홀
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (!holeResults[18]) {
+                        alert("18홀 결과 저장을 먼저 눌러주세요.");
+                        return;
+                      }
+                      setTab("history");
+                    }}
+                    className="h-11 rounded-2xl bg-slate-950 text-sm font-black text-white"
+                  >
+                    정산 완료
+                  </button>
+                )}
+              </div>
             </section>
 
             <section className="rounded-3xl bg-white p-4 shadow-sm">
