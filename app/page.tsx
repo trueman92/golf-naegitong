@@ -428,7 +428,7 @@ export default function Page() {
     const rowCount = activePlayers.length + 1;
 
     canvas.width = nameW + playedHoles.length * cellW + totalW;
-    canvas.height = headerH + rowCount * cellH + 80;
+    canvas.height = headerH + rowCount * cellH + 220;
 
     ctx.fillStyle = "#f8fafc";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -478,6 +478,37 @@ export default function Page() {
       "합계",
       "#0f172a",
       "#ffffff"
+    );
+
+    const summaryY = winnerY + 80;
+
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 24px Arial";
+    ctx.textAlign = "left";
+
+    ctx.fillText("최종 정산", 24, summaryY);
+
+    ctx.font = "bold 18px Arial";
+
+    activePlayers.forEach((player, idx) => {
+      const amount = penalties[player] || 0;
+
+      ctx.fillStyle = "#334155";
+
+      ctx.fillText(
+        `${player}  ${formatWon(amount)}`,
+        24,
+        summaryY + 40 + idx * 30
+      );
+    });
+
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 22px Arial";
+
+    ctx.fillText(
+      `총 내기통 ${formatWon(totalPot)}`,
+      24,
+      summaryY + 180
     );
 
     activePlayers.forEach((player, rowIdx) => {
