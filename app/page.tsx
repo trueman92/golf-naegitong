@@ -452,6 +452,19 @@ export default function Page() {
               />
             </div>
 
+            <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+              <div className="mb-2 font-black text-slate-950">룰 설명</div>
+
+              <ul className="space-y-1">
+                <li>• 매 홀 2:2 팀전</li>
+                <li>• 조커 1명은 실제 스코어와 별개로 내기 계산은 +1</li>
+                <li>• 팀 합산 점수가 높은 팀이 패배</li>
+                <li>• 패배팀 2명이 벌금 납부</li>
+                <li>• 무승부는 다음 홀로 이월</li>
+                <li>• 18홀 무승부는 0원 처리</li>
+              </ul>
+            </div>
+            
             <button
               onClick={startGame}
               className="mt-5 w-full rounded-2xl bg-slate-950 py-3 text-lg font-bold text-white"
