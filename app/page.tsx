@@ -480,37 +480,6 @@ export default function Page() {
       "#ffffff"
     );
 
-    const summaryY = winnerY + 80;
-
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 24px Arial";
-    ctx.textAlign = "left";
-
-    ctx.fillText("최종 정산", 24, summaryY);
-
-    ctx.font = "bold 18px Arial";
-
-    activePlayers.forEach((player, idx) => {
-      const amount = penalties[player] || 0;
-
-      ctx.fillStyle = "#334155";
-
-      ctx.fillText(
-        `${player}  ${formatWon(amount)}`,
-        24,
-        summaryY + 40 + idx * 30
-      );
-    });
-
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 22px Arial";
-
-    ctx.fillText(
-      `총 내기통 ${formatWon(totalPot)}`,
-      24,
-      summaryY + 180
-    );
-
     activePlayers.forEach((player, rowIdx) => {
       const y = startY + (rowIdx + 1) * cellH;
 
@@ -612,6 +581,37 @@ export default function Page() {
       "-",
       "#0f172a",
       "#ffffff"
+    );
+
+    const summaryY = winnerY + 80;
+
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 24px Arial";
+    ctx.textAlign = "left";
+
+    ctx.fillText("최종 정산", 24, summaryY);
+
+    ctx.font = "bold 18px Arial";
+
+    activePlayers.forEach((player, idx) => {
+      const amount = penalties[player] || 0;
+
+      ctx.fillStyle = "#334155";
+
+      ctx.fillText(
+        `${player}  ${formatWon(amount)}`,
+        24,
+        summaryY + 40 + idx * 30
+      );
+    });
+
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 22px Arial";
+
+    ctx.fillText(
+      `총 내기통 ${formatWon(totalPot)}`,
+      24,
+      summaryY + 180
     );
 
     const link = document.createElement("a");
