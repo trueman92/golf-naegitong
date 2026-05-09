@@ -95,6 +95,7 @@ export default function Page() {
   const [holeResults, setHoleResults] = useState<Record<number, string[]>>({});
   const [holeHistory, setHoleHistory] = useState<Record<number, HoleHistoryItem>>({});
   const [result, setResult] = useState("");
+  const [editingHole, setEditingHole] = useState<number | null>(null);
 
   const activePlayers = players.filter(Boolean);
 
@@ -300,12 +301,15 @@ export default function Page() {
           ? `무승부 · 18홀은 0원 처리`
           : `무승부 · 다음 홀 1인 ${formatWon(nextStake)}판`
       );
+      setEditingHole(null);
       return;
     }
 
     setResult(
       `패배팀: ${loserTeam.join(" / ")} · 1인 ${formatWon(currentStake)} · ${teamColorNames[teamSettings.A.color]} ${scoreLabel(aScore)} / ${teamColorNames[teamSettings.B.color]} ${scoreLabel(bScore)}`
     );
+    
+    setEditingHole(null);
   }
 
   function getCarryCountBeforeHole(history: Record<number, HoleHistoryItem>, targetHole: number) {
@@ -331,6 +335,35 @@ export default function Page() {
     setScores(Object.fromEntries(activePlayers.map((p) => [p, 0])));
     setResult("");
     setTab("game");
+  }
+
+  function loadHole(h: number) {
+    const item = holeHistory[h];
+
+    if (!item) return;
+
+    const restoredTeams: Record<string, TeamValue> = {};
+
+    item.teamA.forEach((p) => {
+      restoredTeams[p] = "A";
+    });
+
+    item.teamB.forEach((p) => {
+      restoredTeams[p] = "B";
+    });
+
+    setHole(h);
+    setTeams(restoredTeams);
+    setJoker(item.joker);
+    setPar(item.par);
+
+    setScores(item.actualDiffs);
+
+    setEditingHole(h);
+
+    setTab("game");
+
+    setResult(`${h}홀 수정중`);
   }
 
   function resetAll() {
@@ -648,7 +681,7 @@ export default function Page() {
                 onClick={calculate}
                 className="mt-4 h-12 w-full rounded-2xl bg-emerald-600 text-base font-black text-white"
               >
-                {currentHoleSaved ? "결과 다시 계산" : "결과 계산"}
+                {editingHole ? `${editingHole}홀 수정 저장` : currentHoleSaved ? "결과 다시 계산" : "결과 계산"}
               </button>
 
               {result && (
@@ -660,12 +693,30 @@ export default function Page() {
                 </div>
               )}
 
-              <button
-                onClick={nextHole}
-                className="mt-2 h-11 w-full rounded-2xl bg-slate-100 text-sm font-black"
-              >
-                다음 홀
-              </button>
+              {hole > 1 && (
+                <button
+                  onClick={() => loadHole(hole - 1)}
+                  className="mt-2 h-11 w-full rounded-2xl bg-amber-100 text-sm font-black text-amber-900"
+                >
+                  이전 홀 수정
+                </button>
+              )}
+
+              {hole < 18 ? (
+                <button
+                  onClick={nextHole}
+                  className="mt-2 h-11 w-full rounded-2xl bg-slate-100 text-sm font-black"
+                >
+                  다음 홀
+                </button>
+              ) : (
+                <button
+                  onClick={() => setTab("history")}
+                  className="mt-2 h-11 w-full rounded-2xl bg-slate-950 text-sm font-black text-white"
+                >
+                  정산 완료 · 결과 보기
+                </button>
+              )}
             </section>
 
             <section className="rounded-3xl bg-white p-4 shadow-sm">
