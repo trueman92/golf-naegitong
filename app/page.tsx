@@ -413,6 +413,182 @@ export default function Page() {
     alert("카카오톡 공유용 결과 복사 완료!");
   }
 
+  function downloadScoreCardImage() {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+
+    if (!ctx) return;
+
+    const playedHoles = HOLES.filter((h) => holeHistory[h]);
+    const cellW = 86;
+    const cellH = 42;
+    const nameW = 110;
+    const totalW = 130;
+    const headerH = 60;
+    const rowCount = activePlayers.length + 1;
+
+    canvas.width = nameW + playedHoles.length * cellW + totalW;
+    canvas.height = headerH + rowCount * cellH + 80;
+
+    ctx.fillStyle = "#f8fafc";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 28px Arial";
+    ctx.fillText("골프내기통 스코어카드", 24, 38);
+
+    ctx.font = "bold 16px Arial";
+    ctx.fillStyle = "#334155";
+
+    const startY = headerH;
+
+    function drawCell(
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      text: string,
+      bg = "#ffffff",
+      color = "#0f172a"
+    ) {
+      ctx.fillStyle = bg;
+      ctx.fillRect(x, y, w, h);
+
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.strokeRect(x, y, w, h);
+
+      ctx.fillStyle = color;
+      ctx.font = "bold 15px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x + w / 2, y + h / 2);
+    }
+
+    drawCell(0, startY, nameW, cellH, "이름", "#e2e8f0");
+
+    playedHoles.forEach((h, idx) => {
+      drawCell(nameW + idx * cellW, startY, cellW, cellH, `${h}H`, "#e2e8f0");
+    });
+
+    drawCell(
+      nameW + playedHoles.length * cellW,
+      startY,
+      totalW,
+      cellH,
+      "합계",
+      "#0f172a",
+      "#ffffff"
+    );
+
+    activePlayers.forEach((player, rowIdx) => {
+      const y = startY + (rowIdx + 1) * cellH;
+
+      drawCell(0, y, nameW, cellH, player, "#ffffff");
+
+      let totalDiff = 0;
+      let playedPar = 0;
+
+      playedHoles.forEach((h, idx) => {
+        const item = holeHistory[h];
+        const x = nameW + idx * cellW;
+
+        if (!item) {
+          drawCell(x, y, cellW, cellH, "-", "#ffffff");
+          return;
+        }
+
+        const score = item.actualDiffs[player] ?? 0;
+        totalDiff += score;
+        playedPar += item.par;
+
+        const isJoker = player === item.joker;
+        const isTeamA = item.teamA.includes(player);
+
+        const bg = isTeamA ? "#dbeafe" : "#ffe4e6";
+        const color = isTeamA ? "#1e3a8a" : "#881337";
+
+        drawCell(
+          x,
+          y,
+          cellW,
+          cellH,
+          displayScore(score, isJoker),
+          bg,
+          color
+        );
+      });
+
+      const totalScore = playedPar + totalDiff;
+
+      drawCell(
+        nameW + playedHoles.length * cellW,
+        y,
+        totalW,
+        cellH,
+        playedHoles.length === 0
+          ? "-"
+          : `${totalScore}타 (${scoreLabel(totalDiff)})`,
+        "#0f172a",
+        "#ffffff"
+      );
+    });
+
+    const winnerY = startY + (activePlayers.length + 1) * cellH;
+
+    drawCell(0, winnerY, nameW, cellH, "이긴팀", "#e2e8f0");
+
+    playedHoles.forEach((h, idx) => {
+      const item = holeHistory[h];
+      const x = nameW + idx * cellW;
+
+      if (!item) {
+        drawCell(x, winnerY, cellW, cellH, "-", "#ffffff");
+        return;
+      }
+
+      if (item.losers.length === 0) {
+        drawCell(x, winnerY, cellW, cellH, "무", "#ffffff", "#64748b");
+        return;
+      }
+
+      const winnerKey =
+        item.losers.join("|") === item.teamA.join("|") ? "B" : "A";
+
+      const winnerName =
+        winnerKey === "A"
+          ? teamColorNames[teamSettings.A.color]
+          : teamColorNames[teamSettings.B.color];
+
+      const bg = winnerKey === "A" ? "#dbeafe" : "#ffe4e6";
+      const color = winnerKey === "A" ? "#1e3a8a" : "#881337";
+
+      drawCell(
+        x,
+        winnerY,
+        cellW,
+        cellH,
+        winnerName.replace("팀", ""),
+        bg,
+        color
+      );
+    });
+
+    drawCell(
+      nameW + playedHoles.length * cellW,
+      winnerY,
+      totalW,
+      cellH,
+      "-",
+      "#0f172a",
+      "#ffffff"
+    );
+
+    const link = document.createElement("a");
+    link.download = "골프내기통_스코어카드.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
+
   if (!started) {
     return (
       <div className="min-h-screen bg-slate-100 p-4 text-slate-950">
@@ -758,6 +934,13 @@ export default function Page() {
         ) : (
           <section className="rounded-3xl bg-white p-4 shadow-sm">
             <h2 className="mb-3 text-lg font-black">홀별 결과표</h2>
+
+            <button
+              onClick={downloadScoreCardImage}
+              className="mb-3 h-11 w-full rounded-2xl bg-slate-950 text-sm font-black text-white"
+            >
+              스코어카드 이미지 저장
+            </button>
 
             <div className="mb-4 overflow-x-auto rounded-2xl bg-slate-50 p-2">
               <table className="w-max min-w-full border-separate border-spacing-1 text-center text-xs">
